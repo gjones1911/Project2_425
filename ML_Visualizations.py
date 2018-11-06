@@ -100,18 +100,18 @@ def make_prop_o_var_plot(s, num_obs, show_it=True):
 
     single_vals = numpy.arange(1,num_obs+1)
 
-    fig = plt.figure(figsize=(8, 5))
-    plt.plot(single_vals, prop_list, 'ro-', linewidth=2)
-    plt.title('Proportion of Variance')
-    plt.xlabel('Eigenvectors')
-    plt.ylabel('Prop. of var.')
-    leg = plt.legend(['Eigenvectors vs. Prop. of Var.'], loc='best', borderpad=0.3,
-                     shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
-                     markerscale=0.4)
-    leg.get_frame().set_alpha(0.4)
-    leg.draggable(state=True)
-
     if show_it:
+        fig = plt.figure(figsize=(8, 5))
+        plt.plot(single_vals, prop_list, 'ro-', linewidth=2)
+        plt.title('Proportion of Variance')
+        plt.xlabel('Eigenvectors')
+        plt.ylabel('Prop. of var.')
+        leg = plt.legend(['Eigenvectors vs. Prop. of Var.'], loc='best', borderpad=0.3,
+                         shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
+                         markerscale=0.4)
+        leg.get_frame().set_alpha(0.4)
+        leg.draggable(state=True)
+
         plt.show()
 
     return k_val
@@ -190,24 +190,71 @@ def basic_scatter_plot(x, y, x_label, y_label, title, legend):
 
 
 def z_scatter_plot(Z, schools, x_label='z1', y_label='z2', title='PC1 vs. PC2 for all Observations',
-                   legend='z1 vs. z2'):
+                   legend='z1 vs. z2', show_it=True):
+
+    if show_it:
+        fig = plt.figure(figsize=(8, 5))
+        i = 0
+        for row in Z:
+            z1 = row[0]
+            z2 = row[1]
+            plt.scatter(z1, z2, s=5, c=[[1, .2, .1]])
+            plt.annotate(schools.index(schools[i]), (z1, z2))
+            i += 1
+
+        plt.title(title)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        leg = plt.legend([legend], loc='best', borderpad=0.3,
+                         shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
+                         markerscale=0.4)
+        leg.get_frame().set_alpha(0.4)
+        leg.draggable(state=True)
+
+        plt.show()
+    return
+
+
+def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', title='PC1 vs. PC2 for all Observations',
+                   legend='z1 vs. z2', show_it=True, colors=[[.8, .4, .2]], b_list=[] , show_center=True):
+
+
+    row_mid = len(mid)
 
     fig = plt.figure(figsize=(8, 5))
+    ax = fig.add_subplot(111)
     i = 0
     for row in Z:
         z1 = row[0]
         z2 = row[1]
-        plt.scatter(z1, z2)
-        plt.annotate(schools.index(schools[i]), (z1, z2))
+
+        if len(b_list) > 0:
+            l = list(b_list[i].tolist())
+            midx = l.index(1)
+            #print(l.index(1))
+
+        ax.scatter(z1, z2, s=20, c=colors[midx])
+        ax.annotate(schools.index(schools[i]), (z1, z2))
         i += 1
+    if not show_center:
+        i = 0
+        #for row in mid:
+        for row, color in zip(mid, colors):
+            m1 = row[0]
+            m2 = row[1]
+            ax.scatter(m1, m2, s=0, c=color)
+            #ax.annotate(groups[i], (m1, m2), arrowprops=dict(facecolor='black', shrink=1.05))
+            #ax.annotate(groups[i], (m1, m2))
+            i += 1
 
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    leg = plt.legend([legend], loc='best', borderpad=0.3,
+    leg = plt.legend(legend, loc='best', borderpad=0.3,
                      shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
-                     markerscale=0.4)
+                     markerscale=0.4, )
     leg.get_frame().set_alpha(0.4)
     leg.draggable(state=True)
-    plt.show()
+    if show_it:
+        plt.show()
     return
