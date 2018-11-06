@@ -6,6 +6,53 @@ from DimensionReduction import x_to_z_projection_pca
 from Process_CSV_to_Json import get_basic_stats
 
 
+def p(str):
+    print(str)
+    return
+
+
+def get_mid_p(glist, x):
+
+    r_c = x.shape
+    c = r_c[1]
+
+    #xl = numpy.array([0]*c, dtype=numpy.float)
+    yl = 0
+    xlist = list()
+
+    for i in glist:
+        xlist.append(list(x[i].tolist()))
+
+    xl = numpy.stack(xlist)
+    x_stat = get_basic_stats(xl)
+
+    return x_stat[0]
+
+
+def make_g_m(x):
+
+    g1 = [22]
+    g2 = [3]
+    g3 = [25,26]
+    g4 =[19,14,27,12]
+    g5 =[5,17,24,4,23,18,2]
+    g6 = [44,6,38,40,7,46,1,11,12]
+    g7 = [34,29,0,10,33,53,37,47,9,39,36,31,28,41,45,20,55]
+    g8 = [32,56,43,49,51,35,21,48]
+    g9 = [15,16,52,8,30,54,13,50]
+
+    size = len(g1) + len(g2) + len(g3) + len(g4) + len(g5) + len(g6) + len(g7) + len(g8) + len(g9)
+    print('the size is {:d}'.format(size))
+    gtot = [g1, g2, g3, g4, g5, g6, g7, g8, g9]
+
+    m_all = list()
+
+    for g in gtot:
+        m_all.append(get_mid_p(g, x))
+
+    return numpy.array(m_all, dtype=numpy.float)
+
+
 def make_rand_m(data_array, k):
 
     row_col = data_array.shape
@@ -93,8 +140,8 @@ def get_new_m(x, m, bi):
 
 
 def k_means_clustering(x, k):
-    r_c, mk = make_rand_m(x, k)
-
+    r_c, mr = make_rand_m(x, k)
+    mk = make_g_m(x)
     print('')
     print('')
     print('')
@@ -117,6 +164,20 @@ def k_means_clustering(x, k):
 
     return mk, iter, bi_list
 
+
+def reduce_x(W, z, mu):
+
+    l = []
+    cnt = 0
+    x_array = list()
+
+    for row in z:
+        res = numpy.dot(W, row)
+        x_array.append(res + mu)
+
+    x = numpy.array(x_array, dtype=numpy.float)
+
+    return x
 
 
 data_list = load_data_files()
@@ -153,13 +214,27 @@ WT = numpy.transpose(W)
 
 z_array = x_to_z_projection_pca(WT, np_utk_data, numpy.array(mu_a, dtype=numpy.float))
 
+x_red = reduce_x(W, z_array, numpy.array(mu_a, dtype=numpy.float))
+
+p('The transformed x into z is:')
+print(z_array.shape)
+
+
+p('The reduced x is:')
+print(x_red.shape)
 
 #basic_scatter_plot(vx, vy, 'w1_1', 'w2_2', 'w1 vs. w2', 'w1 vs. w2')
 
-#z_scatter_plot(z_array, s_name,)
+z_title = 'The first 2 PC for the transformed data into {:d} dimension'.format(k)
+
+z_scatter_plot(z_array, s_name,title=z_title, last=True, show_it=False)
 
 #r_c, mk = make_rand_m(np_utk_data, 4)
 
+# --------------------------------------------------------------------------------------------------------------
+mg = make_g_m(np_utk_data)
+print("find me")
+print(mg.shape)
 #print(r_c)
 
 
@@ -173,7 +248,7 @@ for row in r_c:
     i += 1
 '''
 
-km = 4
+km = 9
 
 '''
 bi_l has dimentsion num_obs x num_groupse
@@ -221,12 +296,12 @@ colors_a = [[1, 0, 0],      # 0
             [0, 1, 0],      # 1
             [1, 1, 0],      # 2
             [0, 0, 1],      # 3
-            [1, 0, 1],      # 4
-            [0, 1, 1],      # 5
-            [1, 1, 1],      # 6
-            [0, 0, 0],      # 7
-            [.5, 0, 1],     # 8
-            [0, .5, 1],     # 9
+            [0, 0, 0],      # 4
+            [1, 0, 1],      # 5
+            [0, 1, 1],      # 6
+            [.7, .5, .2],    # 7
+            [.5, .2, .1],   # 8
+            [.5, .5, .5],   # 9
             [.5, .5, 1],    # 10
             [.8, .3, .1],   # 11
             [.1, .3, .8],   # 12
@@ -265,7 +340,7 @@ k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_l
 #for row in end_mk.tolist():
 #    print(row)
 
-
+make_g_m(z_array)
 
 '''
 bi_list = calculate_bi(np_utk_data, mk)
