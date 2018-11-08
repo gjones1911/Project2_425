@@ -51,6 +51,19 @@ def make_rand_m(data_array, k):
     return rand_chc, mk
 
 
+def make_given_m(x, r_c):
+
+    ret_l = list()
+
+    for inst in r_c:
+        ret_l.append(x[inst])
+
+        # mk = numpy.stack(ret_l)
+    mk = numpy.array(ret_l, dtype=numpy.float)
+
+    return mk
+
+
 def make_mean_mod_m(x, k, mu_a, min_a, max_a):
     mu = numpy.array(mu_a, dtype=float)
     mn = numpy.array(min_a, dtype=float)
@@ -246,8 +259,11 @@ def create_group_l(b, k):
 
 
 # def k_means_clustering(x, k, mu_a, min_a, max_a):
-def k_means_clustering(x, k):
-    r_c, mk = make_rand_m(x, k)
+def k_means_clustering(x, k, init_m = [] ):
+    if len(init_m) ==0:
+        r_c, mk = make_rand_m(x, k)
+    else:
+        mk = init_m
     #mk = make_g_m(x)
     #mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
 
@@ -257,12 +273,12 @@ def k_means_clustering(x, k):
     print('---------------------------------------->{:d}'.format(rc[0]))
     print('---------------------------------------->{:d}'.format(rc[1]))
     '''
-    print('')
-    print('')
-    print('The random choice array is:')
-    print(r_c.tolist())
-    print('')
-    print('')
+    #print('')
+    #print('')
+    #print('The random choice array is:')
+    #print(r_c.tolist())
+    #print('')
+    #print('')
 
     avg_dif = 10000
 
@@ -271,7 +287,7 @@ def k_means_clustering(x, k):
     #while abs(avg_dif) > 0:
     while abs(avg_dif) > 1:
         bi_list = calculate_bi(x, mk)
-        mk, dif_m = get_new_m(np_utk_data, mk[:, :], bi_list)
+        mk, dif_m = get_new_m(x, mk[:, :], bi_list)
         #avg_dif = numpy.mean(dif_m)
         avg_dif = numpy.sum(dif_m)
         iter += 1
@@ -336,15 +352,19 @@ std_a = stats[1]
 min_a = stats[2]
 max_a = stats[3]
 
-k = make_prop_o_var_plot(s, num_obs, show_it=True, last_plot=False)
+k = make_prop_o_var_plot(s, num_obs, show_it=False, last_plot=False)
 p('The original k:')
 p('The best k for original data is {:d}'.format(k))
-
+ko = k
 W = v[:, 0:k]
-
 WT = numpy.transpose(W)
 
+W2 = v[:, 0:2]
+WT2 = numpy.transpose(W2)
+
+
 z_array = x_to_z_projection_pca(WT, np_utk_data, numpy.array(mu_a, dtype=numpy.float))
+z_array2 = x_to_z_projection_pca(WT2, np_utk_data, numpy.array(mu_a, dtype=numpy.float))
 
 x_red = reduce_x(W, z_array, numpy.array(mu_a, dtype=numpy.float))
 #red_x = x_reduced(u, s, WT)
@@ -364,7 +384,7 @@ print(x_red.shape)
 
 z_title = 'The first 2 PC for the transformed data into {:d} dimension'.format(k)
 
-z_scatter_plot(z_array, s_name,title=z_title, last=True, show_it=True)
+z_scatter_plot(z_array, s_name,title=z_title, last=False, show_it=False)
 
 #r_c, mk = make_rand_m(np_utk_data, 4)
 
@@ -385,18 +405,22 @@ for row in r_c:
     i += 1
 '''
 #----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
-km = 5
+km = 9
 #----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
 
 '''
 bi_l has dimentsion num_obs x num_groupse
 '''
 
+
+
 # print(numpy.linalg.norm([2,4,3]))
 found = False
 
 while not found:
     try:
+        #rcc, init_mk = make_rand_m(np_utk_data, km)
+        #end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, init_m=init_mk)
         end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km)
         grps = create_group_l(list(bi_l.tolist()), km)
         # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
@@ -436,7 +460,7 @@ vmy = vm[:, 1]
 
 k = make_prop_o_var_plot(sm, km, show_it=False)
 
-print('The value of K should be {:d}'.format(k))
+print('The value of K sh ould be {:d}'.format(k))
 
 Wm = vm[:, 0:k]
 
@@ -493,13 +517,15 @@ legend_titles = ['Group 1',
 
 z_scatter_plot(mid_points, groups, show_it=False)
 k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l, show_center=False,
-                       title=k_cluster_title, legend=legend_titles)
+                       title=k_cluster_title, legend=legend_titles, last=False)
 
-km = 5
+#km = 5
 found = False
 
 while not found:
     try:
+        #init_mk = make_given_m(z_array, rcc)
+        #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, init_m=init_mk)
         end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km)
         grps2 = create_group_l(list(bi_l2.tolist()), km)
         # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
@@ -514,24 +540,58 @@ while not found:
         found = False
         print('we have and error')
 
-grps = create_group_l(list(bi_l.tolist()), km)
+#grps = create_group_l(list(bi_l.tolist()), km)
 
-print('---------------------------------------------------------------------------------------------The groupings are:')
+print('-----------------------------------------------------------------------------------------The 2 groupings are:')
 
 cnt = 0
-for group in grps:
+for group in grps2:
     if len(group) > 0:
         p('group {:d}:'.format(cnt+1))
         p(group)
         p('')
     cnt += 1
 
-
+title = 'K Clustering fouur projected data {:d} PC'.format(ko)
 k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
-                       title=k_cluster_title, legend=legend_titles)
+                       title=title, legend=legend_titles, last=False, show_it=False)
 
 
+found = False
 
+while not found:
+    try:
+        #init_mk = make_given_m(z_array, rcc)
+        #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, init_m=init_mk)
+        end_mk2,  iter2, bi_l2 = k_means_clustering(z_array2, km)
+        grps2 = create_group_l(list(bi_l2.tolist()), km)
+        # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
+        um2, sm2, vhm2 = numpy.linalg.svd(end_mk, full_matrices=True, compute_uv=True)
+        found = check_grouping(grps2)
+        mid = min_intercluster_distance(z_array2, grps2)
+        mxid = max_intracluster_distance(z_array2, grps2)
+        p('The min intercluster distance is : {:f}'.format(mid))
+        p('The max intracluster distance is : {:f}'.format(mxid))
+        p('the dun index is: {:f}'.format(mid/mxid))
+    except numpy.linalg.LinAlgError:
+        found = False
+        print('we have and error')
+
+#grps = create_group_l(list(bi_l.tolist()), km)
+
+print('-----------------------------------------------------------------------------------------The 2 groupings are:')
+
+cnt = 0
+for group in grps2:
+    if len(group) > 0:
+        p('group {:d}:'.format(cnt+1))
+        p(group)
+        p('')
+    cnt += 1
+
+title = 'K Clustering for projected data 2 PC'
+k_cluster_scatter_plot(z_array2, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
+                       title=title, legend=legend_titles, last=True, show_it=True)
 
 
 #for row in end_mk.tolist():

@@ -219,7 +219,8 @@ def z_scatter_plot(Z, schools, x_label='z1', y_label='z2', title='PC1 vs. PC2 fo
 
 
 def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', title='PC1 vs. PC2 for all Observations',
-                   legend='z1 vs. z2', show_it=True, colors=[[.8, .4, .2]], b_list=[] , show_center=True):
+                   legend='z1 vs. z2', show_it=True, colors=[[.8, .4, .2]], b_list=[] ,
+                           show_center=True, last=False):
 
 
     row_mid = len(mid)
@@ -258,6 +259,6 @@ def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', 
     #                 markerscale=0.4, )
     #leg.get_frame().set_alpha(0.4)
     #leg.draggable(state=True)
-    if show_it:
+    if last:
         plt.show()
     return
