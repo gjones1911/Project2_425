@@ -66,7 +66,7 @@ def make_scree_plot_usv(s, num_obs, show_it=True):
     return
 
 
-def make_prop_o_var_plot(s, num_obs, show_it=True):
+def make_prop_o_var_plot(s, num_obs, show_it=True, last_plot = True):
 
     sum_s = sum(s.tolist())
 
@@ -83,7 +83,8 @@ def make_prop_o_var_plot(s, num_obs, show_it=True):
     for i in range(1, num_obs+1):
         #print(s[0:i].tolist())
         #print('')
-        perct = sum(s[0:i].tolist()) / sum_s
+        #perct = sum(ss[0:i]) / sum_ss
+        perct = sum(s[0:i]) / sum_s
         prop_list.append(perct)
 
         #print('Prop. of Var. {:f} with k = {:d}'.format(perct, i))
@@ -112,7 +113,8 @@ def make_prop_o_var_plot(s, num_obs, show_it=True):
         leg.get_frame().set_alpha(0.4)
         leg.draggable(state=True)
 
-        plt.show()
+        if last_plot:
+            plt.show()
 
     return k_val
 

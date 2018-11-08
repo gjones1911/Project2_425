@@ -14,10 +14,12 @@ def p(str):
 
 # used to make sure we got all the groups we wanted
 def check_grouping(groups):
+    cnt = 0
     for group in groups:
         if len(group) == 0:
-            p('Wrong number of groups found')
+            p('Wrong number of groups found at {:d}'.format(cnt))
             return False
+        cnt += 1
     return True
 
 
@@ -34,9 +36,9 @@ def make_rand_m(data_array, k):
     rows = row_col[0]
     cols = row_col[1]
 
-    #rand_chc = numpy.random.choice(rows, k, replace=False)
+    rand_chc = numpy.random.choice(rows, k, replace=False)
 
-    rand_chc = numpy.array([55,2,42,25,8,22,21,52,12])
+    #rand_chc = numpy.array([55,2,42,25,8,22,21,52,12])
 
     ret_l = list()
 
@@ -238,6 +240,7 @@ def create_group_l(b, k):
         # look in current b row and find what group this observation
         # belongs to
         gnum = b[obs].index(1)
+        #p(gnum)
         group_list[gnum].append(obs)
     return group_list
 
@@ -246,7 +249,7 @@ def create_group_l(b, k):
 def k_means_clustering(x, k):
     r_c, mk = make_rand_m(x, k)
     #mk = make_g_m(x)
-    mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
+    #mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
 
     '''
     rc = mk.shape
@@ -294,6 +297,14 @@ def reduce_x(W, z, mu):
     x = numpy.array(x_array, dtype=numpy.float)
 
     return x
+
+
+def x_reduced(u, s, vt):
+
+    us = numpy.dot(u,s)
+
+    return numpy.dot(us, vt)
+
 # ----------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------
@@ -325,8 +336,9 @@ std_a = stats[1]
 min_a = stats[2]
 max_a = stats[3]
 
-k = make_prop_o_var_plot(s, num_obs, show_it=False)
-
+k = make_prop_o_var_plot(s, num_obs, show_it=True, last_plot=False)
+p('The original k:')
+p('The best k for original data is {:d}'.format(k))
 
 W = v[:, 0:k]
 
@@ -335,6 +347,11 @@ WT = numpy.transpose(W)
 z_array = x_to_z_projection_pca(WT, np_utk_data, numpy.array(mu_a, dtype=numpy.float))
 
 x_red = reduce_x(W, z_array, numpy.array(mu_a, dtype=numpy.float))
+#red_x = x_reduced(u, s, WT)
+
+#xr_r_c = red_x.shape
+
+#p('The rows are {:d} and cols {:d}'.format(xr_r_c[0], xr_r_c[1]))
 
 p('The transformed x into z is:')
 print(z_array.shape)
@@ -347,7 +364,7 @@ print(x_red.shape)
 
 z_title = 'The first 2 PC for the transformed data into {:d} dimension'.format(k)
 
-z_scatter_plot(z_array, s_name,title=z_title, last=True, show_it=False)
+z_scatter_plot(z_array, s_name,title=z_title, last=True, show_it=True)
 
 #r_c, mk = make_rand_m(np_utk_data, 4)
 
@@ -477,6 +494,46 @@ legend_titles = ['Group 1',
 z_scatter_plot(mid_points, groups, show_it=False)
 k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l, show_center=False,
                        title=k_cluster_title, legend=legend_titles)
+
+km = 5
+found = False
+
+while not found:
+    try:
+        end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km)
+        grps2 = create_group_l(list(bi_l2.tolist()), km)
+        # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
+        um2, sm2, vhm2 = numpy.linalg.svd(end_mk, full_matrices=True, compute_uv=True)
+        found = check_grouping(grps2)
+        mid = min_intercluster_distance(z_array, grps2)
+        mxid = max_intracluster_distance(z_array, grps2)
+        p('The min intercluster distance is : {:f}'.format(mid))
+        p('The max intracluster distance is : {:f}'.format(mxid))
+        p('the dun index is: {:f}'.format(mid/mxid))
+    except numpy.linalg.LinAlgError:
+        found = False
+        print('we have and error')
+
+grps = create_group_l(list(bi_l.tolist()), km)
+
+print('---------------------------------------------------------------------------------------------The groupings are:')
+
+cnt = 0
+for group in grps:
+    if len(group) > 0:
+        p('group {:d}:'.format(cnt+1))
+        p(group)
+        p('')
+    cnt += 1
+
+
+k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
+                       title=k_cluster_title, legend=legend_titles)
+
+
+
+
+
 #for row in end_mk.tolist():
 #    print(row)
 
