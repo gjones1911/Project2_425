@@ -6,9 +6,71 @@ from DimensionReduction import x_to_z_projection_pca
 from Process_CSV_to_Json import get_basic_stats
 
 
+# cheap print function
 def p(str):
     print(str)
     return
+
+
+# used to make sure we got all the groups we wanted
+def check_grouping(groups):
+    for group in groups:
+        if len(group) == 0:
+            p('Wrong number of groups found')
+            return False
+    return True
+
+
+# random number generagor
+def rng(start, stop, step):
+    return numpy.random.choice(range(start, stop+step, step), 1)
+
+
+# makes a random mk vector to be used for intial clustering
+def make_rand_m(data_array, k):
+
+    row_col = data_array.shape
+
+    rows = row_col[0]
+    cols = row_col[1]
+
+    #rand_chc = numpy.random.choice(rows, k, replace=False)
+
+    rand_chc = numpy.array([55,2,42,25,8,22,21,52,12])
+
+    ret_l = list()
+
+    for inst in rand_chc:
+        ret_l.append(data_array[inst])
+
+    #mk = numpy.stack(ret_l)
+    mk = numpy.array(ret_l, dtype=numpy.float)
+
+    return rand_chc, mk
+
+
+def make_mean_mod_m(x, k, mu_a, min_a, max_a):
+    mu = numpy.array(mu_a, dtype=float)
+    mn = numpy.array(min_a, dtype=float)
+    mx = numpy.array(max_a, dtype=float)
+
+    '''
+    p(mu.tolist())
+
+    p(min_a)
+    p((mn/rng(50,75,5)).tolist())
+
+    p(max_a)
+    p((mx/rng(50,75,5)).tolist())
+    '''
+    ret_l = list()
+
+    for i in range(k):
+
+        # ret_l.append(list(mu + mn/rng(50, 75, 5)).tolist())
+        ret_l.append(mu + mn/rng(5, 75, 5))
+
+    return numpy.stack(ret_l)
 
 
 def get_mid_p(glist, x):
@@ -53,24 +115,40 @@ def make_g_m(x):
     return numpy.array(m_all, dtype=numpy.float)
 
 
-def make_rand_m(data_array, k):
+# calculate the minimum intercluster distance
+def min_intercluster_distance(x, gs):
 
-    row_col = data_array.shape
+    mid = 100**5
 
-    rows = row_col[0]
-    cols = row_col[1]
+    # get a group
+    for g in range(len(gs)-1):
 
-    rand_chc = numpy.random.choice(rows, k)
+        # for every entry in this group
+        for entry in gs[g]:
+            #get a entry in group i
+            x1 = x[entry]
+            # look at every other group and get the distance between the entryies in that
+            # group and group g and save the min
+            for g2 in range(g+1, len(gs)):
+                for entryj in gs[g2]:
+                    x2 = x[entryj]
+                    dis = numpy.linalg.norm(x1-x2)
+                    if dis < mid:
+                        mid = dis
+    return mid
 
-    ret_l = list()
 
-    for inst in rand_chc:
-        ret_l.append(data_array[inst])
+def max_intracluster_distance(x, gs):
 
-    mk = numpy.stack(ret_l)
+    maxid = 0
 
-    return rand_chc, mk
-
+    for row in gs:
+        for i in range(len(row)-1):
+            for j in range(i+1, len(row)):
+                dis = numpy.linalg.norm(x[i] - x[j])
+                if dis > maxid:
+                    maxid = dis
+    return maxid
 
 def calculate_bi(x, m):
 
@@ -84,10 +162,16 @@ def calculate_bi(x, m):
 
     bi_list = list()
 
+    # go through every observation
     for i in range(0, rows):
         bi = [0]*mr_mc[0]
         min_l = list()
         save_j = 0
+        # go through every reverence vector
+        # calculating the difference between the
+        # current observation vector and the jth
+        # reverence vector
+
         for j in range(0, mr_mc[0]):
             #print('x at row {:d}'.format(i))
             #print(x[i].tolist())
@@ -123,15 +207,20 @@ def get_new_m(x, m, bi):
         l = [0]*len(x[0])
         sm = numpy.array(l, dtype=numpy.float64)
         bs = 0
+        in_g = 0
         for row in range(len(x)):
 
             # print('bval is {:f}'.format(bi[row][i]))
             bval = bi[row][i]
             if bval == 1:
+                in_g += 1
                 sm += x[row]
             bs += bval
-
-        new_m[i] = sm/bs
+        # print('------------------------------------------------------------------sm is now {:d}'.format(in_g))
+        if in_g ==0:
+            new_m[i] = m[i]
+        else:
+            new_m[i] = sm/bs
 
     np_new_m = numpy.array(new_m)
 
@@ -139,26 +228,53 @@ def get_new_m(x, m, bi):
     return np_new_m, dif_m
 
 
+# makes a list where each row is a group and the entries in the list
+# at this row are what observations belong to that group
+def create_group_l(b, k):
+    group_list = list()
+    for i in range(k):
+        group_list.append(list())
+    for obs in range(len(b)):
+        # look in current b row and find what group this observation
+        # belongs to
+        gnum = b[obs].index(1)
+        group_list[gnum].append(obs)
+    return group_list
+
+
+# def k_means_clustering(x, k, mu_a, min_a, max_a):
 def k_means_clustering(x, k):
-    r_c, mr = make_rand_m(x, k)
-    mk = make_g_m(x)
-    print('')
+    r_c, mk = make_rand_m(x, k)
+    #mk = make_g_m(x)
+    mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
+
+    '''
+    rc = mk.shape
+    print('----------------------------------------->', mk.tolist())
+    print('---------------------------------------->{:d}'.format(rc[0]))
+    print('---------------------------------------->{:d}'.format(rc[1]))
+    '''
     print('')
     print('')
     print('The random choice array is:')
     print(r_c.tolist())
     print('')
     print('')
-    print('')
+
     avg_dif = 10000
 
     iter = 0
 
-    while abs(avg_dif) > 0:
+    #while abs(avg_dif) > 0:
+    while abs(avg_dif) > 1:
         bi_list = calculate_bi(x, mk)
         mk, dif_m = get_new_m(np_utk_data, mk[:, :], bi_list)
-        avg_dif = numpy.mean(dif_m)
+        #avg_dif = numpy.mean(dif_m)
+        avg_dif = numpy.sum(dif_m)
         iter += 1
+        #print('The average dif is now {:.2f}, iter {:d}'.format(avg_dif, iter))
+        #print('The dif is :')
+        #print(dif_m.tolist())
 
     print('The average dif is now {:.2f}, iter {:d}'.format(avg_dif, iter))
 
@@ -178,6 +294,10 @@ def reduce_x(W, z, mu):
     x = numpy.array(x_array, dtype=numpy.float)
 
     return x
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 
 
 data_list = load_data_files()
@@ -247,24 +367,44 @@ for row in r_c:
     print('')
     i += 1
 '''
-
-km = 9
+#----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
+km = 5
+#----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
 
 '''
 bi_l has dimentsion num_obs x num_groupse
 '''
 
 # print(numpy.linalg.norm([2,4,3]))
-found = True
+found = False
 
-while found:
+while not found:
     try:
         end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km)
+        grps = create_group_l(list(bi_l.tolist()), km)
+        # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
         um, sm, vhm = numpy.linalg.svd(end_mk, full_matrices=True, compute_uv=True)
-        found = False
+        found = check_grouping(grps)
+        mid = min_intercluster_distance(np_utk_data, grps)
+        mxid = max_intracluster_distance(np_utk_data, grps)
+        p('The min intercluster distance is : {:f}'.format(mid))
+        p('The max intracluster distance is : {:f}'.format(mxid))
+        p('the dun index is: {:f}'.format(mid/mxid))
     except numpy.linalg.LinAlgError:
-        found = True
+        found = False
         print('we have and error')
+
+grps = create_group_l(list(bi_l.tolist()), km)
+
+print('---------------------------------------------------------------------------------------------The groupings are:')
+
+cnt = 0
+for group in grps:
+    if len(group) > 0:
+        p('group {:d}:'.format(cnt+1))
+        p(group)
+        p('')
+    cnt += 1
 
 print('Shape of bi_list:')
 print(bi_l.shape)
@@ -340,7 +480,13 @@ k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_l
 #for row in end_mk.tolist():
 #    print(row)
 
-make_g_m(z_array)
+#make_g_m(z_array)
+
+#mtest = make_mean_mod_m(np_utk_data, 9, mu_a, min_a, max_a)
+
+#r_c = mtest.shape
+
+#print('the rows are {:d} and the cols are {:d}'.format(r_c[0], r_c[1]))
 
 '''
 bi_list = calculate_bi(np_utk_data, mk)
@@ -362,4 +508,7 @@ print(mk.tolist())
 print(new_m.tolist())
 print(mk.shape)
 '''
+
+#ta = numpy.around([2,1,3])
+#print(ta -1)
 
