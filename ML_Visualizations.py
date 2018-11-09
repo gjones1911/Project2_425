@@ -40,7 +40,7 @@ def make_scree_graph_data(np_data_array, show_it=True):
     return u, s, vh, v
 
 
-def make_scree_plot_usv(s, num_obs, show_it=True):
+def make_scree_plot_usv(s, num_obs, show_it=True, last=False):
     sum_s = sum(s.tolist())
     s_sum = numpy.cumsum(s)[-1]
     #print('shape of s')
@@ -50,18 +50,18 @@ def make_scree_plot_usv(s, num_obs, show_it=True):
 
     single_vals = numpy.arange(num_obs)
 
-    fig = plt.figure(figsize=(8, 5))
-    plt.plot(single_vals, eigen_vals, 'ro-', linewidth=2)
-    plt.title('Scree Plot')
-    plt.xlabel('Principal Component')
-    plt.ylabel('Eigenvalue')
-    leg = plt.legend(['Eigenvalues from SVD'], loc='best', borderpad=0.3,
-                     shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
-                     markerscale=0.4)
-    leg.get_frame().set_alpha(0.4)
-    leg.draggable(state=True)
-
     if show_it:
+        fig = plt.figure(figsize=(8, 5))
+        plt.plot(single_vals, eigen_vals, 'ro-', linewidth=2)
+        plt.title('Scree Plot')
+        plt.xlabel('Principal Component')
+        plt.ylabel('Eigenvalue')
+        leg = plt.legend(['Eigenvalues from SVD'], loc='best', borderpad=0.3,
+                         shadow=False, prop=matplotlib.font_manager.FontProperties(size='small'),
+                         markerscale=0.4)
+        leg.get_frame().set_alpha(0.4)
+        leg.draggable(state=True)
+    if last:
         plt.show()
     return
 
@@ -85,6 +85,8 @@ def make_prop_o_var_plot(s, num_obs, show_it=True, last_plot = True):
         #print('')
         #perct = sum(ss[0:i]) / sum_ss
         perct = sum(s[0:i]) / sum_s
+        #perct = sum(s[0:i]) / sum_ss
+        # print(perct)
         prop_list.append(perct)
 
         #print('Prop. of Var. {:f} with k = {:d}'.format(perct, i))
@@ -104,7 +106,7 @@ def make_prop_o_var_plot(s, num_obs, show_it=True, last_plot = True):
     if show_it:
         fig = plt.figure(figsize=(8, 5))
         plt.plot(single_vals, prop_list, 'ro-', linewidth=2)
-        plt.title('Proportion of Variance')
+        plt.title('Proportion of Variance, K should be {:d}'.format(k_val))
         plt.xlabel('Eigenvectors')
         plt.ylabel('Prop. of var.')
         leg = plt.legend(['Eigenvectors vs. Prop. of Var.'], loc='best', borderpad=0.3,
@@ -219,8 +221,8 @@ def z_scatter_plot(Z, schools, x_label='z1', y_label='z2', title='PC1 vs. PC2 fo
 
 
 def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', title='PC1 vs. PC2 for all Observations',
-                   legend='z1 vs. z2', show_it=True, colors=[[.8, .4, .2]], b_list=[] ,
-                           show_center=True, last=False):
+                           legend='z1 vs. z2', show_it=True, colors=[[.8, .4, .2]], b_list=[] ,g_ids = {},
+                           show_center=True, last=False, groups_l=[]):
 
 
     row_mid = len(mid)
@@ -234,11 +236,15 @@ def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', 
 
         if len(b_list) > 0:
             l = list(b_list[i].tolist())
-            midx = l.index(1)
+            midx = l.index(1) % len(colors)
             #print(l.index(1))
 
         ax.scatter(z1, z2, s=20, c=colors[midx])
-        ax.annotate(schools.index(schools[i]), (z1, z2))
+
+        if len(groups_l) > 0:
+            ax.annotate(groups_l[i], (z1, z2))
+        else:
+            ax.annotate(schools.index(schools[i]), (z1, z2))
         i += 1
     if show_center:
         i = 0

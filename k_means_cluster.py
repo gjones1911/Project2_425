@@ -165,6 +165,7 @@ def max_intracluster_distance(x, gs):
                     maxid = dis
     return maxid
 
+
 def calculate_bi(x, m):
 
     r_c = x.shape
@@ -259,7 +260,8 @@ def create_group_l(b, k):
 
 
 # def k_means_clustering(x, k, mu_a, min_a, max_a):
-def k_means_clustering(x, k, init_m=[], m_init_type=0):
+def k_means_clustering(x, k, init_m=[], m_init_type=0, mu_a=numpy.array([]),
+                       min_a=numpy.array([]), max_a=numpy.array([])):
     if len(init_m) ==0:
         if m_init_type == 0 != 1 != 2:
             r_c, mk = make_rand_m(x, k)
@@ -360,7 +362,7 @@ def e_step(S, x, m, pi_i):
             dif = x[t] - m[j]
             s = S[j]
             if s == 0:
-                s = 1
+                s = .00001
             a1 = -.5 * numpy.transpose(dif)
             b1 = (1 / s) * dif
             sb += pi_i[j] * (abs(s)**(-.5)) * numpy.exp( numpy.dot(a1, b1) )
@@ -432,7 +434,7 @@ def expectation_maximization(x, m, h):
         dif = numpy.mean(mold - mi, dtype=numpy.float)
 
         ret_d = numpy.around(abs(dif_old - dif), 1)
-        print('The dif is now {:f}'.format(ret_d))
+        #print('The dif is now {:f}'.format(ret_d))
 
     return mi, hi
 
@@ -442,7 +444,6 @@ def x_reduced(u, s, vt):
     us = numpy.dot(u,s)
 
     return numpy.dot(us, vt)
-
 
 def get_EM_grouping(h, k):
 
@@ -463,6 +464,29 @@ def get_EM_grouping(h, k):
     return numpy.array(g, dtype=numpy.float)
 
 
+def show_grouping(grouping):
+
+    r = 1
+    for row in grouping:
+        print('Group {:d}: '.format(r))
+        p(row)
+        p('')
+        r += 1
+    return
+
+def make_label_list(size):
+    groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'k', 'L', 'M', 'N', 'O', 'P',
+               'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+
+    ret_l = [''] * size
+
+    r = list
+
+    for i in range(size):
+
+        ret_l[i] = ret_l[i%len(groups)] + groups[i%len(groups)]
+
+    return ret_l
 
 # ----------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------
@@ -470,6 +494,12 @@ def get_EM_grouping(h, k):
 # ----------------------------------------------------------------------------------------------------------------
 
 
+
+
+
+
+
+'''
 data_list = load_data_files()
 
 utk_label = data_list[0]
@@ -532,13 +562,12 @@ z_scatter_plot(z_array, s_name,title=z_title, last=False, show_it=False)
 #r_c, mk = make_rand_m(np_utk_data, 4)
 
 # --------------------------------------------------------------------------------------------------------------
-#mg = make_g_m(np_utk_data)
-#print("find me")
-#print(mg.shape)
+mg = make_g_m(np_utk_data)
+print("find me")
+print(mg.shape)
 #print(r_c)
 
 
-'''
 for row in r_c:
     print(mk[i].tolist())
     print("")
@@ -546,14 +575,12 @@ for row in r_c:
     print('')
     print('')
     i += 1
-'''
 #----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
 km = 9
 #----------------------------------------------KKKKKKKKKKKKKKK--------------------------------------------------
 
-'''
 bi_l has dimentsion num_obs x num_groupse
-'''
+
 
 
 
@@ -579,7 +606,7 @@ while not found:
         print('we have and error')
 
 
-'''
+
 print('__________________________________________HERE--------------------------------------------------------------')
 print('__________________________________________HERE--------------------------------------------------------------')
 print('__________________________________________HERE--------------------------------------------------------------')
@@ -611,7 +638,7 @@ print(h)
 print('__________________________________________HERE2b--------------------------------------------------------------')
 print('__________________________________________HERE2b--------------------------------------------------------------')
 print('__________________________________________HERE2b--------------------------------------------------------------')
-'''
+
 
 mnew, hnew = expectation_maximization(np_utk_data, end_mk, bi_l)
 
@@ -715,12 +742,10 @@ groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
 
 k_cluster_title = 'K means clustering with {:d} groups for UTK peers data'.format(km)
 
-'''
 legend_titles = [['Group 1'],
                  ['Group 2'],
                  ['Group 3'],
                  ['Group 4']]
-'''
 
 
 legend_titles = ['Group 1',
@@ -821,7 +846,6 @@ k_cluster_scatter_plot(z_array2, s_name, mid_points, groups, colors=colors_a, b_
 
 #print('the rows are {:d} and the cols are {:d}'.format(r_c[0], r_c[1]))
 
-'''
 bi_list = calculate_bi(np_utk_data, mk)
 
 cnt = 0
@@ -840,8 +864,8 @@ print(dif_m)
 print(mk.tolist())
 print(new_m.tolist())
 print(mk.shape)
-'''
 
 #ta = numpy.around([2,1,3])
 #print(ta -1)
 
+'''

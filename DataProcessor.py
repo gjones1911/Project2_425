@@ -3,6 +3,8 @@ import csv
 import numpy
 import matplotlib.pyplot as plt
 
+
+
 utk_peers_csv = 'UTK-peers.csv'
 utk_data_file = 'UTK-peers_data.dt'
 ipeds_big_trimmed_csv = 'IPEDS-big-trimmed.csv'
@@ -205,13 +207,15 @@ def fix_str_to_num(strg):
     return strg
 
 
-def process_csv_to_json(csv_file_name, json_file_name, headers=True, obs_name=True, ign_l=[0,1], name_idx =1):
+def process_csv_to_json(csv_file_name, json_file_name, headers=True, obs_name=True, name_idx=1, ign_l = [1,2]):
     csv_file = open(csv_file_name, 'r')
     json_file = open(json_file_name, 'w')
     dreader = csv.DictReader(csv_file)
     headers = dreader.fieldnames
 
-    print(headers)
+    name = headers[name_idx]
+
+    #print(headers)
     #print(len(headers))
 
     school_names = list()
@@ -219,11 +223,12 @@ def process_csv_to_json(csv_file_name, json_file_name, headers=True, obs_name=Tr
     limit = 56
     cnt = 0
     for row in dreader:
-        school_names.append(row['Name'])
-        for idx in range(2, len(headers)):
-            header = headers[idx]
-            val = row[header]
-            if idx in to_fix:
+        school_names.append(row['Institution Name'])
+        for idx in range(0, len(headers)):
+            if idx not in ign_l:
+                header = headers[idx]
+                val = row[header]
+                #if idx in to_fix:
                 row[header] = fix_str_to_num(val)
         json.dump(row, json_file)
         json_file.write('\n')
@@ -244,7 +249,8 @@ def get_data_from_json(json_file_name, s_names, headers, bd_ident=-99.9,
 
 
 def process_json_to_data_array(json_file_name, s_names, headers, bd_ident=-99.9,
-                               stop_colls=['HBC', '2014 Med School', 'Vet School']):
+                               stop_colls=["Institution Name",
+                                           'Average net price-students awarded grant or scholarship aid  2015-16 (SFA1516)']):
 
     json_file = open(json_file_name, 'r')
     json_text_array = json_file.readlines()
@@ -258,19 +264,19 @@ def process_json_to_data_array(json_file_name, s_names, headers, bd_ident=-99.9,
 
 
     #stop_colls.append(headers[0])
-    stop_colls.append(headers[1])
+    #stop_colls.append(headers[1])
 
     med2014dict = {}
     vetschool = {}
 
     data_array = list()
 
-    for i in range(0, 57):
+    for i in range(1, len(json_text_array)):
         file_text = json.loads(json_text_array[i])
         c = 0
         attrib_list = list()
         for idx in range(len(headers)):
-            if idx == 0:
+            if idx == 1:
                 bad_row = headers[idx]
                 continue
             entry = headers[idx]
@@ -279,6 +285,14 @@ def process_json_to_data_array(json_file_name, s_names, headers, bd_ident=-99.9,
             val = val.strip('$')
 
             if entry not in stop_colls:
+
+                cc = val.count(',')
+                sc = val.count(' ')
+                for cn in range(cc):
+                    val.strip(',')
+                for s in range(sc):
+                    val.strip(' ')
+
                 if entry == 'Total Faculty':
                     val = float(val)
                 elif val.isnumeric():
@@ -293,7 +307,7 @@ def process_json_to_data_array(json_file_name, s_names, headers, bd_ident=-99.9,
                     elif val == '-' or val == '#N/A':
                         val = bd_ident
                 attrib_list.append(val)
-
+            '''
             else:
                 if entry == stop_colls[1]:
                     if val in med2014dict:
@@ -315,88 +329,8 @@ def process_json_to_data_array(json_file_name, s_names, headers, bd_ident=-99.9,
                         attrib_list.append(1)
                     else:
                         attrib_list.append(0)
-
+            '''
         data_array.append(attrib_list)
 
     num_schools = len(json_text_array)
     return data_array
-
-
-def normalize_data_set(x, mn, mx):
-
-    d = list(x)
-
-    for r in range(len(x)):
-        for c in range(len(x[0])):
-
-            new_val = (d[r][c] - mn[c])/(mx[c]-mn[c])
-
-            if new_val > 0:
-                d[r][c] = (d[r][c] - mn[c])/(mx[c]-mn[c])
-
-    return d
-
-
-def z_normalize_data_set(x, mu, std):
-
-    d = list(x)
-
-    for r in range(len(x)):
-        for c in range(len(x[0])):
-
-            z_val = (d[r][c] - mu[c])/(std[c])
-
-            # if new_val > 0:
-            d[r][c] = z_val
-
-    return d
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-
-# --------------------------------------------------Do the whole thing-------------------------------------------------
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-'''
-s_names, headers = process_csv_to_json(utk_peers_csv, utk_peers_json)
-
-d_array = process_json_to_data_array(utk_peers_json, s_names, headers)
-
-#print('Note: school name and HBC were removed from the data array')
-
-attrib_labels = headers[2:4] + headers[5:]
-
-write_data_array_to_file(utk_data_file, d_array,  attribs=attrib_labels, delimeter=' ', label_delim=' ')
-
-utk_labels, utk_data, np_utk_data = load_numpy_da_file(utk_data_file, labels=True, attrib_delim=' ')
-
-#print('')
-#print(utk_labels)
-#print(np_utk_data.shape)
-#print(np_utk_data[:, 0].tolist())
-
-attrib_array = get_attrib_array(np_utk_data)
-
-#print('idex {:d} is '.format(utk_labels.index('IPEDS#')))
-#print(attrib_array.tolist()[utk_labels.index(utk_labels[0])])
-
-basic_stats = get_basic_stats(attrib_array)
-
-#print('')
-#print('')
-
-#stat_type = ['mean', 'std', 'min', 'max']
-
-#for i in range(len(basic_stats)):
-#    print(stat_type[i] + ': ')
-#    print(basic_stats[i])
-
-fix_list = np_utk_data.tolist()
-
-#for row in fix_list:
-#    print(row)
-
-
-write_data_array_to_file('UTK-peers-data_avg.dt', fix_list,  attribs=attrib_labels, delimeter=' ')
-'''
