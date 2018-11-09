@@ -237,7 +237,7 @@ def get_new_m(x, m, bi):
         else:
             new_m[i] = sm/bs
 
-    np_new_m = numpy.array(new_m)
+    np_new_m = numpy.array(new_m, dtype=numpy.float)
 
     dif_m = np_new_m - m
     return np_new_m, dif_m
@@ -259,13 +259,18 @@ def create_group_l(b, k):
 
 
 # def k_means_clustering(x, k, mu_a, min_a, max_a):
-def k_means_clustering(x, k, init_m = [] ):
+def k_means_clustering(x, k, init_m=[], m_init_type=0):
     if len(init_m) ==0:
-        r_c, mk = make_rand_m(x, k)
+        if m_init_type == 0 != 1 != 2:
+            r_c, mk = make_rand_m(x, k)
+        elif m_init_type == 1:
+            r_c = []
+            mk = make_g_m(x)
+        elif m_init_type == 2:
+            r_c = []
+            mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
     else:
         mk = init_m
-    #mk = make_g_m(x)
-    #mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
 
     '''
     rc = mk.shape
@@ -315,11 +320,149 @@ def reduce_x(W, z, mu):
     return x
 
 
+def get_si(x, m, h):
+
+    s = list()
+    S = numpy.array([0]*len(m), dtype=numpy.float)
+    for i in range(len(m)):
+        st = 0
+        sb = 0
+        for t in range(len(x)):
+            st += h[t][i]*(numpy.dot((x[t]-m[i]), numpy.transpose(x[t]-m[i])))
+            sb += h[t][i]
+        if sb == 0:
+            S[i] = 0
+        else:
+            S[i] = st/sb
+
+    return numpy.array(S, dtype=numpy.float)
+
+
+def calculate_pi_i(h, N):
+    pi_i = list()
+
+    r_c = h.shape
+
+    for i in range(r_c[1]):
+        sm = 0
+        for t in range(N):
+            sm += h[t][i]
+        pi_i.append(sm/N)
+    return numpy.array(pi_i, dtype=numpy.float)
+
+
+def e_step(S, x, m, pi_i):
+    ht = list()
+    for t in range(len(x)):
+        sb = 0
+        hi = list()
+        for j in range(len(m)):
+            dif = x[t] - m[j]
+            s = S[j]
+            if s == 0:
+                s = 1
+            a1 = -.5 * numpy.transpose(dif)
+            b1 = (1 / s) * dif
+            sb += pi_i[j] * (abs(s)**(-.5)) * numpy.exp( numpy.dot(a1, b1) )
+        for i in range(len(m)):
+            s = S[i]
+            if s == 0:
+                s = 1
+            dif = x[t] - m[i]
+            a1 = -.5*numpy.transpose(dif)
+            b1 = (1/s) * dif
+            val = pi_i[i] * (abs(s)**(-.5)) * numpy.exp(numpy.dot(a1, b1) )
+            hi.append(val/sb)
+        ht.append(hi)
+
+    return numpy.array(ht, dtype=numpy.float)
+
+
+def calculate_mi(h, x):
+    m = list()
+
+    for i in range(len(h[0])):
+
+        sm = numpy.array([], dtype=numpy.float)
+
+        tp = numpy.array([0] * len(x[0]), dtype=numpy.float)
+
+        bt = 0
+
+        for t in range(len(x)):
+
+            #print(h[t][i])
+            tp += h[t][i] * x[t]
+            bt += h[t][i]
+
+        m.append(tp / bt)
+
+    return numpy.array(m, dtype=numpy.float)
+
+
+def expectation_maximization(x, m, h):
+    # estimate S
+    S = get_si(x, m, h)
+
+    #calculate pi_i
+    pi_i = calculate_pi_i(h, len(x))
+
+    hi = e_step(S, x, m, pi_i)
+
+    mi = calculate_mi(hi, x)
+    dif = 0
+    ret_d = 100000
+
+
+
+    while abs(ret_d) > 1:
+        mold = numpy.array(list(mi.tolist()))
+
+        dif_old = dif
+
+        s = get_si(x, mi, hi)
+
+        # calculate pi_i
+        pi_i = calculate_pi_i(hi, len(x))
+
+        hi = e_step(s, x, mi, pi_i)
+
+        mi = calculate_mi(hi, x)
+
+        dif = numpy.mean(mold - mi, dtype=numpy.float)
+
+        ret_d = numpy.around(abs(dif_old - dif), 1)
+        print('The dif is now {:f}'.format(ret_d))
+
+    return mi, hi
+
+
 def x_reduced(u, s, vt):
 
     us = numpy.dot(u,s)
 
     return numpy.dot(us, vt)
+
+
+def get_EM_grouping(h, k):
+
+    hl = h.tolist()
+
+    g = list()
+    #for i in range(k):
+    #    l = list([0]*k)
+    #    g.append(l)
+
+    for row in range(len(hl)):
+        mx = max(hl[row])
+        l = list([0]*k)
+        g.append(l)
+
+        g[-1][hl[row].index(mx)] = 1
+
+    return numpy.array(g, dtype=numpy.float)
+
+
 
 # ----------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------
@@ -434,6 +577,76 @@ while not found:
     except numpy.linalg.LinAlgError:
         found = False
         print('we have and error')
+
+
+'''
+print('__________________________________________HERE--------------------------------------------------------------')
+print('__________________________________________HERE--------------------------------------------------------------')
+print('__________________________________________HERE--------------------------------------------------------------')
+S = get_si(np_utk_data, end_mk, bi_l)
+print(S.shape)
+print(S)
+print('__________________________________________HERE--------------------------------------------------------------')
+print('__________________________________________HERE--------------------------------------------------------------')
+print('__________________________________________HERE--------------------------------------------------------------')
+print('')
+print('__________________________________________HERE2--------------------------------------------------------------')
+print('__________________________________________HERE2--------------------------------------------------------------')
+print('__________________________________________HERE2--------------------------------------------------------------')
+
+print('__________________________________________HERE2a--------------------------------------------------------------')
+print('__________________________________________HERE2a--------------------------------------------------------------')
+print('__________________________________________HERE2a--------------------------------------------------------------')
+
+pi_i = calculate_pi_i(bi_l, len(np_utk_data))
+print(pi_i.shape)
+print(pi_i)
+print('__________________________________________HERE2a--------------------------------------------------------------')
+print('__________________________________________HERE2a--------------------------------------------------------------')
+print('__________________________________________HERE2b--------------------------------------------------------------')
+
+h = e_step(S, np_utk_data, end_mk, pi_i)
+print(h.shape)
+print(h)
+print('__________________________________________HERE2b--------------------------------------------------------------')
+print('__________________________________________HERE2b--------------------------------------------------------------')
+print('__________________________________________HERE2b--------------------------------------------------------------')
+'''
+
+mnew, hnew = expectation_maximization(np_utk_data, end_mk, bi_l)
+
+p('')
+p('')
+p('')
+p('')
+p('')
+p('new M ')
+print(mnew.shape)
+print(mnew)
+p('')
+p('')
+p('')
+p('')
+p('')
+p('')
+p('')
+p('')
+p('')
+p('')
+p('new h ')
+print(hnew.shape)
+print(hnew)
+p('')
+p('')
+p('')
+p('')
+p('')
+
+gbb = get_EM_grouping(hnew, km)
+
+for i in range(len(gbb)):
+    print('Group {:d}'.format(i))
+    print(gbb[i])
 
 grps = create_group_l(list(bi_l.tolist()), km)
 
@@ -552,10 +765,12 @@ for group in grps2:
         p('')
     cnt += 1
 
-title = 'K Clustering fouur projected data {:d} PC'.format(ko)
-k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
-                       title=title, legend=legend_titles, last=False, show_it=False)
+title = 'K Clustering four projected data {:d} PC'.format(ko)
+#k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
+#                       title=title, legend=legend_titles, last=False, show_it=False)
 
+k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=gbb, show_center=False,
+                       title=title, legend=legend_titles, last=False, show_it=False)
 
 found = False
 
@@ -593,6 +808,7 @@ title = 'K Clustering for projected data 2 PC'
 k_cluster_scatter_plot(z_array2, s_name, mid_points, groups, colors=colors_a, b_list=bi_l2, show_center=False,
                        title=title, legend=legend_titles, last=True, show_it=True)
 
+#get_si(np_utk_data, 0, 0)
 
 #for row in end_mk.tolist():
 #    print(row)

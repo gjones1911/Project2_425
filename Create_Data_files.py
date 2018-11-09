@@ -180,10 +180,13 @@ basic_stat_file = 'utk_peer_stats2.dt'
 
 ign_list = ['HBC']
 
+extra_ignores = list([0,1])
 
-def create_needed_files(csv_name = utk_peers_csv, data_file_name=utk_data_file, json_name=utk_peers_json,
-                        imputated_data_file=imputated_data, obs_names=peer_names, attrib_names = header_names,
-                        ignore_list=ign_list, verbose=True):
+
+def create_needed_files(csv_name=utk_peers_csv, data_file_name=utk_data_file, json_name=utk_peers_json,
+                        imputated_data_file=imputated_data, obs_names=peer_names, attrib_names=header_names,
+                        ignore_list=ign_list, additional_ignores=[0,1],verbose=True, attrib_file=attrib_file,
+                        stat_file=basic_stat_file):
     """This will create a set of needed files for data analysis
 
     :param csv_name: name of csv file to process
@@ -193,7 +196,10 @@ def create_needed_files(csv_name = utk_peers_csv, data_file_name=utk_data_file, 
     :param obs_names: optional, name of the observations file containing the names of each observation
     :param attrib_names: optional, name of the file to be created that will contain the names of the attributes of data
     :param ignore_list: optional, list of names of attribute that should be removed from main list
-    :param verbose: optional, used to diaplay some of the data created and loaded
+    :param additional_ignores: optional, list of names of attribute that should be added to ignore list
+    :param attrib_file: optional, name you want to write the attribute names to
+    :param verbose: optional, used to display some of the data created and loaded
+    :param stat_file: optional, name of file to load stats into
     :return: None
     """
 
@@ -203,18 +209,18 @@ def create_needed_files(csv_name = utk_peers_csv, data_file_name=utk_data_file, 
 
     if verbose:
         print(headers)
-    # TODO: need to add a optional parameter to do this
-    ignore_list.append(headers[0])
-    ignore_list.append(headers[1])
+
+    for i in additional_ignores:
+        ignore_list.append(headers[i])
 
     # create two files:
     # one for the observation names
     # one for the attribute labes
-    write_list_to_file(s_names, peer_names)
-    write_list_to_file(headers, header_names)
+    write_list_to_file(s_names, obs_names)
+    write_list_to_file(headers, attrib_names)
 
     # create a basic data array from json file created above
-    d_array = process_json_to_data_array(utk_peers_json, s_names, headers)
+    d_array = process_json_to_data_array(json_name, s_names, headers)
 
     # remove the items in the ignore list from the attribute labels
     attrib_labels = remove_list(headers, ignore_list)
@@ -222,23 +228,22 @@ def create_needed_files(csv_name = utk_peers_csv, data_file_name=utk_data_file, 
     if verbose:
         print(attrib_labels)
 
-
     write_list_to_file(attrib_labels, attrib_file)
 
-    write_data_array_to_file(utk_data_file, d_array,  attribs=attrib_labels, delimeter=' ', label_delim=' ')
+    write_data_array_to_file(data_file_name, d_array,  attribs=attrib_labels, delimeter=' ', label_delim=' ')
 
-    utk_labels, utk_data, np_utk_data = load_numpy_da_file(utk_data_file, labels=True, attrib_delim=' ')
+    utk_labels, utk_data, np_utk_data = load_numpy_da_file(data_file_name, labels=True, attrib_delim=' ')
 
     # TODO: write this to a file
     attrib_array = get_attrib_array(np_utk_data)
 
     basic_stats = get_basic_stats(np_utk_data)
 
-    write_list_to_file(basic_stats, basic_stat_file)
+    write_list_to_file(basic_stats, stat_file)
 
     fix_list = np_utk_data.tolist()
 
-    write_data_array_to_file(imputated_data, fix_list,  attribs=attrib_labels, delimeter=' ')
+    write_data_array_to_file(imputated_data_file, fix_list,  attribs=attrib_labels, delimeter=' ')
 
     return
 
