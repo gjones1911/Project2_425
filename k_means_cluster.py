@@ -1,11 +1,8 @@
-from Create_Data_files import *
-# from LoadingDataFiles import x_to_z_projection_pca
-import numpy
 from ML_Visualizations import *
-from DimensionReduction import x_to_z_projection_pca
 from Process_CSV_to_Json import get_basic_stats
 
 
+# -----------------------------------------Utility functions(make things easy---------------------------------------
 # cheap print function
 def p(str):
     print(str)
@@ -23,12 +20,42 @@ def check_grouping(groups):
     return True
 
 
+# makes a list where each row is a group and the entries in the list
+# at this row are what observations belong to that group
+def create_group_l(b, k):
+    group_list = list()
+    for i in range(k):
+        group_list.append(list())
+    for obs in range(len(b)):
+        # look in current b row and find what group this observation
+        # belongs to
+        for n in range(len(b[obs])):
+            if b[obs][n] == 1:
+                #gnum = b[obs].index(1)
+                group_list[n].append(obs)
+        #p('the group number is {:d}'.format(gnum))
+        #group_list[gnum].append(obs)
+    #p('')
+    #p('')
+    #p('')
+    #p('')
+    #p('')
+    for i in range(len(group_list)):
+        if len(group_list[i]) == 0:
+            p('No one in group {:d}'.format(i))
+
+    return group_list
+
+
 # random number generagor
 def rng(start, stop, step):
     return numpy.random.choice(range(start, stop+step, step), 1)
 
+# ------------------------------------------------------------------------------------------------------------------
 
-# makes a random mk vector to be used for intial clustering
+
+# -----------------------------------------Reference Vector Functions-----------------------------------------------
+# makes a random mk vector to be used for initial clustering
 def make_rand_m(data_array, k):
 
     row_col = data_array.shape
@@ -51,19 +78,17 @@ def make_rand_m(data_array, k):
     return rand_chc, mk
 
 
+# uses r_c to pick out vectors in x to make a set of reference vectors
 def make_given_m(x, r_c):
-
     ret_l = list()
-
     for inst in r_c:
         ret_l.append(x[inst])
-
         # mk = numpy.stack(ret_l)
     mk = numpy.array(ret_l, dtype=numpy.float)
-
     return mk
 
 
+# makes  a mean based set of referecne vectors
 def make_mean_mod_m(x, k, mu_a, min_a, max_a):
     mu = numpy.array(mu_a, dtype=float)
     mn = numpy.array(min_a, dtype=float)
@@ -80,29 +105,29 @@ def make_mean_mod_m(x, k, mu_a, min_a, max_a):
     '''
     ret_l = list()
 
-    for i in range(k):
+    div = list([60])
 
-        # ret_l.append(list(mu + mn/rng(50, 75, 5)).tolist())
+    for i in range(k):
+        div.append(div[-1]+5)
+
+    for i in range(k):
+        #ret_l.append(mu + mn/rng(50, 75, 5))
+        #ret_l.append(mu + mn/div[i])
         ret_l.append(mu + mn/rng(5, 75, 5))
 
     return numpy.stack(ret_l)
 
 
 def get_mid_p(glist, x):
-
     r_c = x.shape
     c = r_c[1]
-
     #xl = numpy.array([0]*c, dtype=numpy.float)
     yl = 0
     xlist = list()
-
     for i in glist:
         xlist.append(list(x[i].tolist()))
-
     xl = numpy.stack(xlist)
     x_stat = get_basic_stats(xl)
-
     return x_stat[0]
 
 
@@ -129,6 +154,8 @@ def make_g_m(x):
 
     return numpy.array(m_all, dtype=numpy.float)
 
+# -------------------------------------k means functions------------------------------------------------------
+
 
 # calculate the minimum intercluster distance
 def min_intercluster_distance(x, gs):
@@ -139,6 +166,7 @@ def min_intercluster_distance(x, gs):
     for g in range(len(gs)-1):
 
         # for every entry in this group
+        # each entry is a point in the group
         for entry in gs[g]:
             #get a entry in group i
             x1 = x[entry]
@@ -153,6 +181,8 @@ def min_intercluster_distance(x, gs):
     return mid
 
 
+# returns maximun intracluster distance e.g.
+# the largest distance between points in different clusters
 def max_intracluster_distance(x, gs):
 
     maxid = 0
@@ -166,13 +196,14 @@ def max_intracluster_distance(x, gs):
     return maxid
 
 
+# calculate a label matrix
 def calculate_bi(x, m):
 
+    # N x d
     r_c = x.shape
-    mr_mc = m.shape
 
-    #print(r_c)
-    #print(mr_mc)
+    # K x d
+    mr_mc = m.shape
 
     rows = r_c[0]
 
@@ -182,39 +213,43 @@ def calculate_bi(x, m):
     for i in range(0, rows):
         bi = [0]*mr_mc[0]
         min_l = list()
-        save_j = 0
         # go through every reverence vector
         # calculating the difference between the
         # current observation vector and the jth
-        # reverence vector
-
-        for j in range(0, mr_mc[0]):
-            #print('x at row {:d}'.format(i))
-            #print(x[i].tolist())
-            #print('m at row {:d}'.format(j))
-            #print(m[j].tolist())
-            dif = x[i]-m[j]
-            #print('dif is {:d} vs {:d}'.format(i,j))
-            #print(dif.tolist())
+        # reverence vector. store the minimun length
+        #for j in range(0, mr_mc[0]):
+        for m_row in m:
+            #dif = x[i]-m[j]
+            dif = x[i]-m_row
             norm = numpy.linalg.norm(dif)
             min_l.append(norm)
-            #print('norm is {:f}'.format(norm))
-            #print('')
 
         minimum = min(min_l)
-
+        #print('the length of min_l is {:d}'.format(len(min_l)))
+        #print('the length of bi is {:d}'.format(len(bi)))
+        #p('The min was {:f}'.format(minimum))
+        # add a 1 to the column to signify where this observation (row)
+        # is in group id
+        found = False
         for id in range(len(min_l)):
-            #print(id)
             if min_l[id] == minimum:
                 bi[id] = 1
+                found = True
+        if not found:
+            p('')
+            p('')
+            p('I DID NOT FIND THE MIN')
+            p('')
+            p('')
+
+        print(bi)
         bi_list.append(bi)
-        #print('The min is {:f}'.format(minimum))
-        #print('')
-        #print('')
+    create_group_l(bi_list, len(bi))
 
     return numpy.array(bi_list, dtype=numpy.float)
 
 
+# create new reference vectors
 def get_new_m(x, m, bi):
 
     new_m = m.tolist()
@@ -225,7 +260,6 @@ def get_new_m(x, m, bi):
         bs = 0
         in_g = 0
         for row in range(len(x)):
-
             # print('bval is {:f}'.format(bi[row][i]))
             bval = bi[row][i]
             if bval == 1:
@@ -233,42 +267,32 @@ def get_new_m(x, m, bi):
                 sm += x[row]
             bs += bval
         # print('------------------------------------------------------------------sm is now {:d}'.format(in_g))
-        if in_g ==0:
+        if in_g == 0:
             new_m[i] = m[i]
         else:
             new_m[i] = sm/bs
 
     np_new_m = numpy.array(new_m, dtype=numpy.float)
 
-    dif_m = np_new_m - m
+    # save how much the new and old differ
+    dif_m = abs(np_new_m - m)
     return np_new_m, dif_m
 
 
-# makes a list where each row is a group and the entries in the list
-# at this row are what observations belong to that group
-def create_group_l(b, k):
-    group_list = list()
-    for i in range(k):
-        group_list.append(list())
-    for obs in range(len(b)):
-        # look in current b row and find what group this observation
-        # belongs to
-        gnum = b[obs].index(1)
-        #p(gnum)
-        group_list[gnum].append(obs)
-    return group_list
 
 
 # def k_means_clustering(x, k, mu_a, min_a, max_a):
 def k_means_clustering(x, k, init_m=[], m_init_type=0, mu_a=numpy.array([]),
                        min_a=numpy.array([]), max_a=numpy.array([])):
     if len(init_m) ==0:
-        if m_init_type == 0 != 1 != 2:
+        if m_init_type == 0:
+            p('initialize m to random k elements of x')
             r_c, mk = make_rand_m(x, k)
         elif m_init_type == 1:
             r_c = []
             mk = make_g_m(x)
         elif m_init_type == 2:
+            p('initialize m to modified mean k elements of x')
             r_c = []
             mk = make_mean_mod_m(x,k,mu_a, min_a, max_a)
     else:
@@ -303,6 +327,7 @@ def k_means_clustering(x, k, init_m=[], m_init_type=0, mu_a=numpy.array([]),
         #print(dif_m.tolist())
 
     print('The average dif is now {:.2f}, iter {:d}'.format(avg_dif, iter))
+    #create_group_l(list(bi_list.tolist()), k)
 
     return mk, iter, bi_list
 

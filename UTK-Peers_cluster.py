@@ -7,7 +7,7 @@ from Process_CSV_to_Json import get_basic_stats
 from Process_CSV_to_Json import normalize_data_set
 from k_means_cluster import *
 
-km = 9
+km = 3
 
 # loaded needed data files for utk data
 # default loads the utk data
@@ -22,9 +22,6 @@ s_name = data_list[4]           # list of the names of the schools
 head_l = data_list[5]           # list of headers?
 attribs = data_list[6]          # a list where the rows are the attributes probably redundant
 stats = data_list[7]            # an array of list containing various stats, unpacked below
-
-
-
 
 num_obs = len(s_name)           # grab the number of observations
 
@@ -81,9 +78,9 @@ while not found:
     try:
         #rcc, init_mk = make_rand_m(np_utk_data, km)
         #end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, init_m=init_mk)
-        #end_mk,  iter_n, bi_l = k_means_clustering(np_utk_data, km)
-        end_mk,  iter_n, bi_l = k_means_clustering(np_utk_data, km, m_init_type=2, mu_a=mu_a, min_a=min_a,
-                                                   max_a=max_a)
+        end_mk,  iter_n, bi_l = k_means_clustering(np_utk_data, km)
+        #end_mk,  iter_n, bi_l = k_means_clustering(np_utk_data, km, m_init_type=2, mu_a=mu_a, min_a=min_a,
+        #                                           max_a=max_a)
         grps = create_group_l(list(bi_l.tolist()), km)
         # use the mid points to do some analysis so we can project them into the z plane later
         um, sm, vhm = numpy.linalg.svd(end_mk, full_matrices=True, compute_uv=True)
@@ -111,11 +108,10 @@ while not found:
         #init_mk = make_given_m(z_array, rcc)
         #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, init_m=init_mk)
         #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array_n, km)
-
-        #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km)
-        z_stats = get_basic_stats(z_array)
-        end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, m_init_type=2, mu_a=z_stats[0], min_a=z_stats[2],
-                                                    max_a=z_stats[3])
+        end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km)
+        #z_stats = get_basic_stats(z_array)
+        #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, m_init_type=2, mu_a=z_stats[0], min_a=z_stats[2],
+        #                                            max_a=z_stats[3])
         grps2 = create_group_l(list(bi_l2.tolist()), km)
         # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
         um2, sm2, vhm2 = numpy.linalg.svd(end_mk, full_matrices=True, compute_uv=True)
@@ -139,17 +135,14 @@ found = False
 # cluster useing the first two PC's only
 while not found:
     try:
-        #init_mk = make_given_m(z_array, rcc)
-        #end_mk2,  iter2, bi_l2 = k_means_clustering(z_array, km, init_m=init_mk)
-        #end_mk3,  iter3, bi_l3 = k_means_clustering(z_array2, km)
+        end_mk3,  iter3, bi_l3 = k_means_clustering(z_array2, km)
 
-        z2_stats = get_basic_stats(z_array2)
-
-        end_mk3,  iter3, bi_l3 = k_means_clustering(z_array2, km, m_init_type=2, mu_a=z2_stats[0], min_a=z2_stats[2],
-                                                    max_a=z2_stats[3])
+        #z2_stats = get_basic_stats(z_array2)
+        #end_mk3,  iter3, bi_l3 = k_means_clustering(z_array2, km, m_init_type=2, mu_a=z2_stats[0], min_a=z2_stats[2],
+        #                                            max_a=z2_stats[3])
         grps3 = create_group_l(list(bi_l3.tolist()), km)
         # end_mk,  iter, bi_l = k_means_clustering(np_utk_data, km, mu_a, min_a, max_a)
-        um2, sm2, vhm2 = numpy.linalg.svd(end_mk3, full_matrices=True, compute_uv=True)
+        um3, sm3, vhm3 = numpy.linalg.svd(end_mk3, full_matrices=True, compute_uv=True)
         found = check_grouping(grps3)
         mid = min_intercluster_distance(z_array2, grps3)
         mxid = max_intracluster_distance(z_array2, grps3)
@@ -166,8 +159,8 @@ p('')
 
 # attempt to perform expectation maximization
 #mnew, hnew = expectation_maximization(np_utk_data, end_mk, bi_l)
-mnew, hnew = expectation_maximization(z_array, end_mk2, bi_l2)
-#mnew, hnew = expectation_maximization(z_array2, end_mk3, bi_l3)
+#mnew, hnew = expectation_maximization(z_array, end_mk2, bi_l2)
+mnew, hnew = expectation_maximization(z_array2, end_mk3, bi_l3)
 
 # make a grouping
 gbb = get_EM_grouping(hnew, km)
@@ -202,10 +195,30 @@ Wm = vm[:, 0:k]
 
 WTm = numpy.transpose(Wm)
 
-m_stats = get_basic_stats(end_mk)
+'''
+#--------------------------------------------------------------------------
+vm2 = numpy.transpose(vhm2)
+vmx2 = vm[:, 0]
+vmy2 = vm[:, 1]
+Wm2 = vm2[:, 0:k]
+WTm2 = numpy.transpose(Wm2)
+#--------------------------------------------------------------------------
+vm3 = numpy.transpose(vhm3)
+vmx3 = vm[:, 0]
+vmy3 = vm[:, 1]
+Wm3 = vm2[:, 0:k]
+WTm3 = numpy.transpose(Wm3)
 
+m_stats2 = get_basic_stats(end_mk2)
+m_stats3 = get_basic_stats(end_mk3)
+'''
+m_stats = get_basic_stats(end_mk)
 mid_points = x_to_z_projection_pca(WTm, end_mk, numpy.array(m_stats[0], dtype=numpy.float))
 
+'''
+mid_points2 = x_to_z_projection_pca(WTm2, end_mk2, numpy.array(m_stats2[0], dtype=numpy.float))
+mid_points3 = x_to_z_projection_pca(WTm3, end_mk3, numpy.array(m_stats3[0], dtype=numpy.float))
+'''
 colors_a = [[1, 0, 0],      # 0-red
             [0, 1, 0],      # 1-blue
             [0, 0, 1],      # 2-green
@@ -243,7 +256,7 @@ k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_l
                        title=titlea, legend=legend_titles, last=False, show_it=False)
 
 title = 'K Cluster for projected data {:d} PC w/EM'.format(ko)
-k_cluster_scatter_plot(z_array, s_name, mid_points, groups, colors=colors_a, b_list=gbb, show_center=False,
+k_cluster_scatter_plot(z_array, s_name, mnew, groups, colors=colors_a, b_list=gbb, show_center=True,
                        title=title, legend=legend_titles, last=False, show_it=False)
 
 title2 = 'K Clustering for projected data 2 PC with dun {:.2f}'.format(dun_z2)

@@ -95,11 +95,10 @@ def make_prop_o_var_plot(s, num_obs, show_it=True, last_plot = True):
     k_val = 1
     for perct in prop_list:
         if perct >= .90:
-            #print('percentage',perct,'K:', k_val)
+            if perct > .90:
+                k_val -= 1
             break
         k_val += 1
-
-    #print('length of prop list: {:d}'.format(len(prop_list)))
 
     single_vals = numpy.arange(1,num_obs+1)
 
@@ -247,12 +246,21 @@ def k_cluster_scatter_plot(Z, schools, mid, groups, x_label='x1', y_label='x2', 
             ax.annotate(schools.index(schools[i]), (z1, z2))
         i += 1
     if show_center:
+
+        r_c = b_list.shape
+
+        bii = list()
+        '''
+        for i in range(r_c[0])
+        
+        for 
+        '''
         i = 0
         #for row in mid:
         for row, color in zip(mid, colors):
             m1 = row[0]
             m2 = row[1]
-            ax.scatter(m1, m2, s=30, c=color)
+            ax.scatter(m1, m2, s=3000, c=color, alpha=.1)
             #ax.annotate(groups[i], (m1, m2), arrowprops=dict(facecolor='black', shrink=1.05))
             ax.annotate(groups[i], (m1, m2))
             i += 1
